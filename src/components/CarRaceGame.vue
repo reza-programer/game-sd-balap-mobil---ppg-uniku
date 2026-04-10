@@ -36,7 +36,7 @@ function redSubmit() {
   const val = parseInt(redInput.value);
   redInput.value = '';
   if (val === correctAnswer.value) {
-    redProgress.value = Math.min(maxProgress, redProgress.value + 12);
+    redProgress.value = Math.min(maxProgress, redProgress.value + 5);
     triggerSmoke(redSmoke);
     generateQuestion();
     checkWin();
@@ -60,7 +60,7 @@ function blueSubmit() {
   const val = parseInt(blueInput.value);
   blueInput.value = '';
   if (val === correctAnswer.value) {
-    blueProgress.value = Math.min(maxProgress, blueProgress.value + 12);
+    blueProgress.value = Math.min(maxProgress, blueProgress.value + 5);
     triggerSmoke(blueSmoke);
     generateQuestion();
     checkWin();
@@ -102,9 +102,8 @@ const blueSmoke = ref(false);
 function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 function rndForLevel() {
-  // Determine range from level id
-  const ranges = { 1: [1,5], 2: [1,10], 3: [6,12], 4: [7,15] };
-  const [min, max] = ranges[props.level?.id ?? 1] ?? [1,10];
+  const ranges = { 1: [1,5], 2: [1,7], 3: [1,9], 4: [1,10] };
+  const [min, max] = ranges[props.level?.id ?? 1] ?? [1,5];
   return rnd(min, max);
 }
 
@@ -125,7 +124,7 @@ function triggerSmoke(teamRef) {
 function answerRed(choice) {
   if (gameState.value !== 'playing' || redStunned.value || countdownActive.value) return;
   if (choice === correctAnswer.value) {
-    redProgress.value = Math.min(maxProgress, redProgress.value + 12);
+    redProgress.value = Math.min(maxProgress, redProgress.value + 1);
     triggerSmoke(redSmoke);
     generateQuestion();
     checkWin();
@@ -140,7 +139,7 @@ function answerRed(choice) {
 function answerBlue(choice) {
   if (gameState.value !== 'playing' || blueStunned.value || countdownActive.value) return;
   if (choice === correctAnswer.value) {
-    blueProgress.value = Math.min(maxProgress, blueProgress.value + 12);
+    blueProgress.value = Math.min(maxProgress, blueProgress.value + 1);
     triggerSmoke(blueSmoke);
     generateQuestion();
     checkWin();
@@ -204,19 +203,16 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
     </transition>
 
     <!-- Back button -->
-    <button class="btn-back" @click="emit('back')">← Kembali</button>
+    <button class="btn-back" @click="emit('back')">Kembali</button>
 
     <!-- Level badge -->
     <div class="level-badge">{{ props.level?.emoji ?? '⭐' }} {{ props.level?.name ?? 'Bintang Satu' }}</div>
 
-    <!-- ─── QUESTION BOARD ─── -->
-    <div v-if="gameState === 'playing'" class="question-board glass-panel-dark">
-      <span class="q-label">Siapa Cepat Dia Gas! 🏎️</span>
-      <h1 class="q-text bounce">{{ questionText }} = ?</h1>
-    </div>
+    <!-- ─── QUESTION BOARD ─── inside track, at vertical center ─── -->
+    <!-- Shown as overlay on the track-area, vertically between the two lanes -->
 
-    <!-- ─── RESULT ─── -->
-    <div v-else class="result-board glass-panel-dark">
+    <!-- ─── RESULT (shown when game over) ─── -->
+    <div v-if="gameState !== 'playing'" class="result-board glass-panel-dark">
       <div class="trophy">🏆</div>
       <h1 :class="gameState === 'red_wins' ? 'red-text' : 'blue-text'">
         TIM {{ gameState === 'red_wins' ? 'MERAH' : 'BIRU' }} MENANG!
@@ -237,9 +233,16 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
       <!-- Start line -->
       <div class="start-line"></div>
 
+      <!-- ─── QUESTION BOARD ─── centered between the two lanes ─── -->
+      <div v-if="gameState === 'playing'" class="question-board-track glass-panel-dark">
+        <span class="q-label">Siapa Cepat Dia Gas! 🏎️</span>
+        <h1 class="q-text bounce">{{ questionText }} = ?</h1>
+      </div>
+
       <!-- ─── RED CAR LANE ─── -->
       <div class="lane lane-red">
-        <div class="lane-edge red-edge">TIM MERAH</div>
+        <!-- Team name badge centered in lane -->
+        <div class="lane-team-name red-team-name">🔴 TIM MERAH</div>
 
         <!-- Progress track -->
         <div class="track-ground">
@@ -284,7 +287,8 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 
       <!-- ─── BLUE CAR LANE ─── -->
       <div class="lane lane-blue">
-        <div class="lane-edge blue-edge">TIM BIRU</div>
+        <!-- Team name badge centered in lane -->
+        <div class="lane-team-name blue-team-name">🔵 TIM BIRU</div>
 
         <div class="track-ground">
           <div class="road-dash" v-for="n in 8" :key="n"></div>
@@ -387,13 +391,38 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 }
 
 .btn-back {
-  position: absolute; top: 14px; left: 16px; z-index: 100;
-  background: white; border: none; padding: 8px 18px;
-  border-radius: 20px; font-family: 'Fredoka', sans-serif;
-  font-weight: bold; cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.2s;
+  position: absolute; top: 18px; left: 20px; z-index: 100;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 10px 24px;
+  border-radius: 99px;
+  color: white;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.1rem; font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
-.btn-back:hover { transform: translateY(-2px); }
+
+.btn-back::before {
+  content: '←';
+  display: inline-block;
+  font-size: 1.4rem;
+  transition: transform 0.3s;
+}
+
+.btn-back:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4), 0 0 15px rgba(255,255,255,0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-back:hover::before {
+  transform: translateX(-5px);
+}
 
 .level-badge {
   position: absolute; top: 14px; right: 16px; z-index: 100;
@@ -406,13 +435,34 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
   backdrop-filter: blur(10px);
 }
 
-/* ── Question / Result overlays ── */
-.question-board {
-  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-  text-align: center; padding: 10px 40px; z-index: 20; white-space: nowrap;
+/* ── Question inside track (centered between 2 lanes) ── */
+.question-board-track {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center; padding: 8px 36px;
+  z-index: 20; white-space: nowrap;
+  pointer-events: none;
 }
-.q-label { font-size: 1rem; color: #FFF176; display: block; margin-bottom: 2px; }
-.q-text  { font-size: 3.2rem; margin: 0; color: white; }
+.q-label { font-size: 0.9rem; color: #FFF176; display: block; margin-bottom: 2px; }
+.q-text  { font-size: 2.8rem; margin: 0; color: white; }
+
+/* ── Team name centered inside each lane ── */
+.lane-team-name {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.1rem; font-weight: bold;
+  letter-spacing: 1px;
+  background: rgba(0,0,0,0.35);
+  padding: 4px 16px; border-radius: 20px;
+  pointer-events: none; z-index: 4;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+.red-team-name  { color: #FF8A80; border: 1px solid rgba(244,67,54,0.4); }
+.blue-team-name { color: #82B1FF; border: 1px solid rgba(33,150,243,0.4); }
 
 .result-board {
   position: absolute; top: 20px; left: 50%; transform: translateX(-50%);

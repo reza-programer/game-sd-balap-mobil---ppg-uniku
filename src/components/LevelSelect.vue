@@ -4,9 +4,9 @@ const emit = defineEmits(['select-level', 'back']);
 const levels = [
   {
     id: 1,
-    name: 'Bintang Satu',
+    name: 'Mudah',
     emoji: '⭐',
-    range: '1–5',
+    range: '1–5 × 1–5',
     desc: 'Perkalian angka 1 sampai 5. Cocok untuk pemanasan!',
     color: '#4CAF50',
     shadow: '#2E7D32',
@@ -14,20 +14,20 @@ const levels = [
   },
   {
     id: 2,
-    name: 'Bintang Dua',
+    name: 'Sedang',
     emoji: '⭐⭐',
-    range: '1–10',
-    desc: 'Perkalian angka 1 sampai 10. Standar pelajaran SD!',
+    range: '1–7 × 1–7',
+    desc: 'Perkalian angka 1 sampai 7. Sudah mulai menantang!',
     color: '#2196F3',
     shadow: '#1565C0',
     bg: 'linear-gradient(135deg, #2196F3, #64B5F6)',
   },
   {
     id: 3,
-    name: 'Bintang Tiga',
+    name: 'Sulit',
     emoji: '⭐⭐⭐',
-    range: '6–12',
-    desc: 'Angka lebih besar, butuh konsentrasi ekstra!',
+    range: '1–9 × 1–9',
+    desc: 'Perkalian angka 1 sampai 9. Butuh konsentrasi!',
     color: '#FF9800',
     shadow: '#E65100',
     bg: 'linear-gradient(135deg, #FF9800, #FFB74D)',
@@ -36,8 +36,8 @@ const levels = [
     id: 4,
     name: 'Juara!',
     emoji: '🏆',
-    range: '7–15',
-    desc: 'Level terberat! Hanya untuk para ahli matematika sejati.',
+    range: '1–10 × 1–10',
+    desc: 'Perkalian lengkap 1 sampai 10. Siap jadi juara?',
     color: '#E91E63',
     shadow: '#880E4F',
     bg: 'linear-gradient(135deg, #E91E63, #F48FB1)',
@@ -49,7 +49,7 @@ const levels = [
   <div class="level-select">
     <div class="level-vignette"></div>
 
-    <button class="btn-back" @click="emit('back')">← Kembali</button>
+    <button class="btn-back" @click="emit('back')">Kembali</button>
 
     <div class="level-content">
       <div class="level-header">
@@ -117,17 +117,36 @@ const levels = [
 }
 
 .btn-back {
-  position: absolute; top: 20px; left: 20px; z-index: 100;
-  background: rgba(255,255,255,0.15);
-  border: 2px solid rgba(255,255,255,0.3);
-  color: white; padding: 10px 20px;
-  border-radius: 20px;
+  position: absolute; top: 24px; left: 24px; z-index: 100;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: white; padding: 12px 28px;
+  border-radius: 99px;
   font-family: 'Fredoka', sans-serif;
-  font-weight: bold; cursor: pointer;
-  backdrop-filter: blur(10px);
-  transition: all 0.2s;
+  font-size: 1.1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
-.btn-back:hover { background: rgba(255,255,255,0.25); transform: translateY(-2px); }
+
+.btn-back::before {
+  content: '←';
+  display: inline-block;
+  font-size: 1.4rem;
+  transition: transform 0.3s;
+}
+
+.btn-back:hover { 
+  background: rgba(255, 255, 255, 0.25); 
+  transform: translateY(-3px); 
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4), 0 0 15px rgba(255,255,255,0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-back:hover::before {
+  transform: translateX(-5px);
+}
 
 .level-content {
   position: relative;

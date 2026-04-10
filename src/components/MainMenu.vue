@@ -145,7 +145,7 @@ const photoError = ref(false);
         </div>
 
         <!-- Game showcase -->
-        <div class="game-showcase" @click="emit('start-game')">
+        <div class="game-showcase">
           <div class="showcase-glow"></div>
           <div class="showcase-image" :style="{ backgroundImage: `url(${raceTrackImg})` }"></div>
           <div class="showcase-info">
@@ -160,7 +160,7 @@ const photoError = ref(false);
               <span class="feat">👥 1 vs 1</span>
               <span class="feat">🚀 Real-time</span>
             </div>
-            <button class="btn-main-start">
+            <button class="btn-main-start" @click="emit('start-game')">
               Mulai Balapan! <span class="arrow">→</span>
             </button>
           </div>
@@ -424,7 +424,7 @@ const photoError = ref(false);
   backdrop-filter: blur(16px);
   border: 2px solid rgba(255,255,255,0.1);
   border-radius: 22px;
-  display: flex; overflow: hidden; cursor: pointer;
+  display: flex; overflow: hidden;
   position: relative;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: 0 16px 50px rgba(0,0,0,0.5);

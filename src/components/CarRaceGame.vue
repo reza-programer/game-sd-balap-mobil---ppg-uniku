@@ -20,6 +20,58 @@ const correctAnswer = ref(0);
 
 const gameState = ref('playing'); // 'playing' | 'red_wins' | 'blue_wins'
 
+// ─── Calculator inputs ────────────────────────────────────────
+const redInput  = ref('');
+const blueInput = ref('');
+
+// Red numpad
+function redPress(key) {
+  if (gameState.value !== 'playing' || redStunned.value || countdownActive.value) return;
+  if (key === '⌫') { redInput.value = redInput.value.slice(0, -1); return; }
+  if (redInput.value.length < 4) redInput.value += key;
+}
+function redSubmit() {
+  if (gameState.value !== 'playing' || redStunned.value || countdownActive.value) return;
+  if (!redInput.value) return;
+  const val = parseInt(redInput.value);
+  redInput.value = '';
+  if (val === correctAnswer.value) {
+    redProgress.value = Math.min(maxProgress, redProgress.value + 12);
+    triggerSmoke(redSmoke);
+    generateQuestion();
+    checkWin();
+  } else {
+    redProgress.value = Math.max(0, redProgress.value - 4);
+    redStunned.value = true;
+    setTimeout(() => { redStunned.value = false; }, 1500);
+    checkWin();
+  }
+}
+
+// Blue numpad
+function bluePress(key) {
+  if (gameState.value !== 'playing' || blueStunned.value || countdownActive.value) return;
+  if (key === '⌫') { blueInput.value = blueInput.value.slice(0, -1); return; }
+  if (blueInput.value.length < 4) blueInput.value += key;
+}
+function blueSubmit() {
+  if (gameState.value !== 'playing' || blueStunned.value || countdownActive.value) return;
+  if (!blueInput.value) return;
+  const val = parseInt(blueInput.value);
+  blueInput.value = '';
+  if (val === correctAnswer.value) {
+    blueProgress.value = Math.min(maxProgress, blueProgress.value + 12);
+    triggerSmoke(blueSmoke);
+    generateQuestion();
+    checkWin();
+  } else {
+    blueProgress.value = Math.max(0, blueProgress.value - 4);
+    blueStunned.value = true;
+    setTimeout(() => { blueStunned.value = false; }, 1500);
+    checkWin();
+  }
+}
+
 // ─── Countdown ───────────────────────────────────────────────
 const countdownActive = ref(true);
 const countdownValue  = ref(3); // 3 → 2 → 1 → 'GO!'
@@ -60,18 +112,9 @@ function generateQuestion() {
   const a = rndForLevel(), b = rndForLevel();
   correctAnswer.value = a * b;
   questionText.value  = `${a} × ${b}`;
-
-  const wrongs = new Set();
-  while (wrongs.size < 2) {
-    const offset = rnd(-Math.ceil(correctAnswer.value * 0.3), Math.ceil(correctAnswer.value * 0.3));
-    if (offset !== 0 && correctAnswer.value + offset > 0) wrongs.add(correctAnswer.value + offset);
-  }
-  const all = [correctAnswer.value, ...wrongs];
-  for (let i = all.length - 1; i > 0; i--) {
-    const j = rnd(0, i);
-    [all[i], all[j]] = [all[j], all[i]];
-  }
-  choices.value = all;
+  // Clear both inputs on new question
+  redInput.value  = '';
+  blueInput.value = '';
 }
 
 function triggerSmoke(teamRef) {
@@ -276,37 +319,47 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
     <!-- ─── CONTROLS ─── -->
     <div class="split-controls">
 
-      <!-- RED controls -->
+      <!-- RED calculator -->
       <div class="control-panel red-panel">
         <div class="panel-header">
           <h3>🔴 TIM MERAH</h3>
-          <span v-if="redStunned" class="stun-warn">⚠️ Jawaban Salah!</span>
+          <span v-if="redStunned" class="stun-warn">⚠️ Salah! Tunggu...</span>
         </div>
-        <div class="buttons-grid">
-          <button
-            v-for="c in choices" :key="'r'+c"
-            class="btn-team btn-red"
+        <!-- Display -->
+        <div class="calc-display" :class="{ stunned: redStunned }">
+          <span class="calc-expr">{{ questionText }} =</span>
+          <span class="calc-input">{{ redInput || '_' }}</span>
+        </div>
+        <!-- Numpad -->
+        <div class="numpad">
+          <button v-for="k in ['7','8','9','4','5','6','1','2','3','⌫','0','✓']" :key="'r'+k"
+            :class="['numpad-btn', k==='✓' ? 'btn-submit btn-submit-red' : k==='⌫' ? 'btn-del' : 'btn-digit']"
             :disabled="redStunned || gameState !== 'playing' || countdownActive"
-            @click="answerRed(c)"
-          >{{ c }}</button>
+            @click="k === '✓' ? redSubmit() : redPress(k)"
+          >{{ k }}</button>
         </div>
       </div>
 
       <div class="divider">VS</div>
 
-      <!-- BLUE controls -->
+      <!-- BLUE calculator -->
       <div class="control-panel blue-panel">
         <div class="panel-header">
           <h3>🔵 TIM BIRU</h3>
-          <span v-if="blueStunned" class="stun-warn">⚠️ Jawaban Salah!</span>
+          <span v-if="blueStunned" class="stun-warn">⚠️ Salah! Tunggu...</span>
         </div>
-        <div class="buttons-grid">
-          <button
-            v-for="c in choices" :key="'b'+c"
-            class="btn-team btn-blue"
+        <!-- Display -->
+        <div class="calc-display" :class="{ stunned: blueStunned }">
+          <span class="calc-expr">{{ questionText }} =</span>
+          <span class="calc-input">{{ blueInput || '_' }}</span>
+        </div>
+        <!-- Numpad -->
+        <div class="numpad">
+          <button v-for="k in ['7','8','9','4','5','6','1','2','3','⌫','0','✓']" :key="'b'+k"
+            :class="['numpad-btn', k==='✓' ? 'btn-submit btn-submit-blue' : k==='⌫' ? 'btn-del' : 'btn-digit']"
             :disabled="blueStunned || gameState !== 'playing' || countdownActive"
-            @click="answerBlue(c)"
-          >{{ c }}</button>
+            @click="k === '✓' ? blueSubmit() : bluePress(k)"
+          >{{ k }}</button>
         </div>
       </div>
 
@@ -380,11 +433,11 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0;
   position: relative;
   z-index: 5;
   gap: 6px;
-  padding: 10px 0;
+  padding: 6px 0;
+  max-height: 52vh;
 }
 
 /* Finish & Start lines */
@@ -507,13 +560,14 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 /* ── Controls ── */
 .split-controls {
   display: flex;
-  height: 38vh;
-  min-height: 220px;
+  height: 48vh;
+  min-height: 260px;
   background: rgba(0,0,0,0.75);
   backdrop-filter: blur(10px);
   border-top: 2px solid rgba(255,255,255,0.1);
   position: relative;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .divider {
@@ -526,8 +580,8 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 }
 
 .control-panel {
-  flex: 1; padding: 20px 24px;
-  display: flex; flex-direction: column;
+  flex: 1; padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 10px;
 }
 
 .red-panel  { border-top: 5px solid #F44336; }
@@ -535,45 +589,83 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 
 .panel-header {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 14px;
 }
 .panel-header h3 {
-  margin: 0; font-size: 1.8rem;
+  margin: 0; font-size: 1.5rem;
   font-family: 'Fredoka', sans-serif; color: white;
 }
 .stun-warn {
-  color: #FF5252; font-weight: bold;
+  color: #FF5252; font-weight: bold; font-size: 0.9rem;
   animation: blink 0.4s infinite;
 }
 @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.15; } }
 
-.buttons-grid {
-  display: flex; gap: 16px; flex-grow: 1;
+/* Calculator display */
+.calc-display {
+  background: rgba(0,0,0,0.5);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 8px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 44px;
+  transition: border-color 0.3s;
+}
+.calc-display.stunned {
+  border-color: rgba(255,82,82,0.7);
+  background: rgba(255,82,82,0.1);
+}
+.calc-expr {
+  font-size: 1.1rem; color: rgba(255,255,255,0.55);
+  font-family: 'Fredoka', sans-serif;
+}
+.calc-input {
+  font-size: 1.8rem; font-weight: bold; color: white;
+  font-family: 'Fredoka', sans-serif;
+  letter-spacing: 2px;
 }
 
-.btn-team {
-  flex: 1; font-size: 3.5rem; border: none; color: white;
-  border-radius: 16px; cursor: pointer;
-  font-family: 'Fredoka', cursive; font-weight: bold;
-  transition: all 0.1s;
+/* Numpad 3-col grid */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  flex: 1;
+  min-height: 0;
 }
 
-.btn-red {
-  background: linear-gradient(180deg, #f44336, #b71c1c);
-  box-shadow: 0 8px 0 #7f0000;
+.numpad-btn {
+  border: none; border-radius: 10px; cursor: pointer;
+  font-family: 'Fredoka', sans-serif; font-size: 1.3rem; font-weight: bold;
+  color: white; transition: all 0.1s; min-height: 0;
 }
-.btn-red:active:not(:disabled)  { transform: translateY(8px); box-shadow: none; }
+.numpad-btn:active:not(:disabled) { transform: scale(0.92); }
+.numpad-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.btn-blue {
-  background: linear-gradient(180deg, #2196f3, #0d47a1);
-  box-shadow: 0 8px 0 #002171;
+.btn-digit {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
 }
-.btn-blue:active:not(:disabled) { transform: translateY(8px); box-shadow: none; }
+.btn-digit:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
 
-.btn-team:disabled {
-  filter: grayscale(1); opacity: 0.45;
-  cursor: not-allowed; transform: translateY(8px); box-shadow: none;
+.btn-del {
+  background: rgba(255,152,0,0.3);
+  border: 1px solid rgba(255,152,0,0.5);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+  font-size: 1.1rem;
 }
+.btn-del:hover:not(:disabled) { background: rgba(255,152,0,0.5); }
+
+.btn-submit { font-size: 1.6rem; }
+.btn-submit-red  {
+  background: linear-gradient(180deg, #F44336, #b71c1c);
+  box-shadow: 0 4px 0 #7f0000;
+}
+.btn-submit-blue {
+  background: linear-gradient(180deg, #2196F3, #0d47a1);
+  box-shadow: 0 4px 0 #002171;
+}
+.btn-submit:active:not(:disabled) { transform: scale(0.92); box-shadow: none !important; }
 
 /* Re-use global glass-panel-dark if not scoped */
 .glass-panel-dark {

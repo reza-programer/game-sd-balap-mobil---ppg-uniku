@@ -76,6 +76,9 @@ function blueSubmit() {
 const countdownActive = ref(true);
 const countdownValue  = ref(3); // 3 → 2 → 1 → 'GO!'
 
+const COUNTDOWN_STEP_MS = 1000; // each of 3 · 2 · 1
+const GO_MESSAGE_MS     = 1800; // "SELAMAT BALAPAN!" stays long enough to read
+
 function startCountdown() {
   countdownActive.value = true;
   countdownValue.value  = 3;
@@ -85,10 +88,10 @@ function startCountdown() {
     countdownValue.value = steps[i];
     i++;
     if (i < steps.length) {
-      setTimeout(tick, 900);
+      setTimeout(tick, COUNTDOWN_STEP_MS);
     } else {
       // Show GO for a bit then hide overlay
-      setTimeout(() => { countdownActive.value = false; }, 700);
+      setTimeout(() => { countdownActive.value = false; }, GO_MESSAGE_MS);
     }
   };
   tick();
@@ -172,9 +175,12 @@ onMounted(() => {
 });
 
 // ─── Computed styles ─────────────────────────────────────────
-// Car moves from 2% to 82% (leaving room for car width & finish zone)
-const redCarStyle  = computed(() => ({ left: `${2 + redProgress.value  * 0.80}%` }));
-const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%` }));
+// Car rides between the start line and the finish line; at 100% its nose touches the finish
+const carLeft = progress => ({ left: `calc((100% - var(--car-w)) * ${progress / maxProgress})` });
+const redCarStyle  = computed(() => carLeft(redProgress.value));
+const blueCarStyle = computed(() => carLeft(blueProgress.value));
+
+const levelColor = computed(() => props.level?.color ?? '#4CAF50');
 </script>
 
 <template>
@@ -202,119 +208,128 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
       </div>
     </transition>
 
-    <!-- Back button -->
-    <button class="btn-back" @click="emit('back')">Kembali</button>
+    <!-- ─── TOP BAR ─── back · question · level ─── -->
+    <header class="top-bar">
+      <button class="btn-back" @click="emit('back')">Kembali</button>
 
-    <!-- Level badge -->
-    <div class="level-badge">{{ props.level?.emoji ?? '⭐' }} {{ props.level?.name ?? 'Bintang Satu' }}</div>
+      <!-- Hidden (not removed) after the race so the top bar keeps its height -->
+      <div class="question-card" :class="{ 'is-hidden': gameState !== 'playing' }">
+        <span class="q-label">Siapa Cepat Dia Gas!</span>
+        <span class="q-text bounce">{{ questionText }} = ?</span>
+      </div>
 
-    <!-- ─── QUESTION BOARD ─── inside track, at vertical center ─── -->
-    <!-- Shown as overlay on the track-area, vertically between the two lanes -->
+      <div class="level-badge" :style="{ '--accent': levelColor }">
+        <span class="level-dot"></span>
+        Level {{ props.level?.id ?? 1 }} · {{ props.level?.name ?? 'Mudah' }}
+      </div>
+    </header>
 
     <!-- ─── RESULT (shown when game over) ─── -->
-    <div v-if="gameState !== 'playing'" class="result-board glass-panel-dark">
-      <div class="trophy">🏆</div>
-      <h1 :class="gameState === 'red_wins' ? 'red-text' : 'blue-text'">
-        TIM {{ gameState === 'red_wins' ? 'MERAH' : 'BIRU' }} MENANG!
-      </h1>
-      <p>Selamat! Mobil juara sudah menyentuh garis finish!</p>
-      <button class="btn-choice correct" @click="restart">Main Lagi 🔁</button>
+    <div v-if="gameState !== 'playing'" class="result-overlay">
+      <div class="result-card" :class="gameState === 'red_wins' ? 'red-win' : 'blue-win'">
+        <div class="trophy">🏆</div>
+        <div class="result-eyebrow">Balapan selesai</div>
+        <h1>Tim {{ gameState === 'red_wins' ? 'Merah' : 'Biru' }} Menang!</h1>
+        <p>Selamat! Mobil juara sudah menyentuh garis finish!</p>
+        <div class="result-actions">
+          <button class="btn-again" @click="restart">Main Lagi <span class="arrow">↻</span></button>
+          <button class="btn-level" @click="emit('back')">Ganti Level</button>
+        </div>
+      </div>
     </div>
 
     <!-- ─── RACE TRACK ─── -->
     <div class="track-area">
 
-      <!-- Finish line -->
-      <div class="finish-line">
-        <div class="checker-col" v-for="n in 10" :key="n"></div>
-        <span class="finish-flag">🏁</span>
-      </div>
-
-      <!-- Start line -->
-      <div class="start-line"></div>
-
-      <!-- ─── QUESTION BOARD ─── centered between the two lanes ─── -->
-      <div v-if="gameState === 'playing'" class="question-board-track glass-panel-dark">
-        <span class="q-label">Siapa Cepat Dia Gas! 🏎️</span>
-        <h1 class="q-text bounce">{{ questionText }} = ?</h1>
-      </div>
-
       <!-- ─── RED CAR LANE ─── -->
       <div class="lane lane-red">
-        <!-- Team name badge centered in lane -->
-        <div class="lane-team-name red-team-name">🔴 TIM MERAH</div>
+        <div class="lane-tag"><span class="team-dot"></span>Merah</div>
 
-        <!-- Progress track -->
-        <div class="track-ground">
-          <!-- road dashes -->
-          <div class="road-dash" v-for="n in 8" :key="n"></div>
-        </div>
+        <div class="road">
+          <div class="road-dashes">
+            <div class="road-dash" v-for="n in 8" :key="n"></div>
+          </div>
+          <div class="start-line"></div>
+          <div class="finish-line"></div>
 
-        <!-- Car -->
-        <div class="car-wrapper" :style="redCarStyle" :class="{ stunned: redStunned }">
-          <!-- SVG Red Car (top-down) -->
-          <svg class="car-svg" viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
-            <!-- Shadow -->
-            <ellipse cx="50" cy="52" rx="38" ry="5" fill="rgba(0,0,0,0.3)"/>
-            <!-- Body -->
-            <rect x="8"  y="16" width="84" height="26" rx="8"  fill="#E53935"/>
-            <rect x="18" y="8"  width="60" height="22" rx="8"  fill="#EF5350"/>
-            <!-- Windshield -->
-            <rect x="26" y="10" width="22" height="14" rx="4"  fill="#B3E5FC" opacity="0.9"/>
-            <!-- Rear window -->
-            <rect x="56" y="10" width="18" height="14" rx="4"  fill="#B3E5FC" opacity="0.7"/>
-            <!-- Spoiler -->
-            <rect x="82" y="14" width="10" height="16" rx="3"  fill="#B71C1C"/>
-            <rect x="78" y="12" width="14" height="4"  rx="2"  fill="#D32F2F"/>
-            <!-- Wheels -->
-            <circle cx="24" cy="42" r="9"  fill="#212121"/><circle cx="24" cy="42" r="4"  fill="#757575"/>
-            <circle cx="76" cy="42" r="9"  fill="#212121"/><circle cx="76" cy="42" r="4"  fill="#757575"/>
-            <circle cx="24" cy="14" r="8"  fill="#212121"/><circle cx="24" cy="14" r="3.5" fill="#757575"/>
-            <circle cx="76" cy="14" r="8"  fill="#212121"/><circle cx="76" cy="14" r="3.5" fill="#757575"/>
-            <!-- Headlights -->
-            <ellipse cx="12" cy="24" rx="5" ry="4" fill="#FFF9C4"/>
-            <ellipse cx="12" cy="32" rx="5" ry="4" fill="#FFF9C4"/>
-            <!-- Number plate -->
-            <rect x="36" y="22" width="24" height="12" rx="3" fill="white"/>
-            <text x="48" y="32" text-anchor="middle" font-size="9" font-weight="bold" fill="#E53935">MERAH</text>
-          </svg>
-          <!-- Smoke puff on correct answer -->
-          <transition name="smoke">
-            <div v-if="redSmoke" class="smoke-puff red-smoke"></div>
-          </transition>
+          <div class="car-track">
+            <div class="car-wrapper" :style="redCarStyle" :class="{ stunned: redStunned }">
+              <!-- SVG Red Car (side view, facing the finish line) -->
+              <svg class="car-svg" viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
+                <!-- Shadow -->
+                <ellipse cx="50" cy="52" rx="38" ry="5" fill="rgba(0,0,0,0.3)"/>
+                <!-- Body is drawn nose-left, mirrored so the nose points right -->
+                <g transform="translate(100 0) scale(-1 1)">
+                  <rect x="8"  y="16" width="84" height="26" rx="8"  fill="#E53935"/>
+                  <rect x="18" y="8"  width="60" height="22" rx="8"  fill="#EF5350"/>
+                  <!-- Windshield -->
+                  <rect x="26" y="10" width="22" height="14" rx="4"  fill="#B3E5FC" opacity="0.9"/>
+                  <!-- Rear window -->
+                  <rect x="56" y="10" width="18" height="14" rx="4"  fill="#B3E5FC" opacity="0.7"/>
+                  <!-- Spoiler -->
+                  <rect x="82" y="14" width="10" height="16" rx="3"  fill="#B71C1C"/>
+                  <rect x="78" y="12" width="14" height="4"  rx="2"  fill="#D32F2F"/>
+                  <!-- Wheels -->
+                  <circle cx="24" cy="42" r="9"  fill="#212121"/><circle cx="24" cy="42" r="4"  fill="#757575"/>
+                  <circle cx="76" cy="42" r="9"  fill="#212121"/><circle cx="76" cy="42" r="4"  fill="#757575"/>
+                  <circle cx="24" cy="14" r="8"  fill="#212121"/><circle cx="24" cy="14" r="3.5" fill="#757575"/>
+                  <circle cx="76" cy="14" r="8"  fill="#212121"/><circle cx="76" cy="14" r="3.5" fill="#757575"/>
+                  <!-- Headlights -->
+                  <ellipse cx="12" cy="24" rx="5" ry="4" fill="#FFF9C4"/>
+                  <ellipse cx="12" cy="32" rx="5" ry="4" fill="#FFF9C4"/>
+                </g>
+                <!-- Number plate (outside the mirror so the text reads normally) -->
+                <rect x="37" y="24" width="26" height="11" rx="3" fill="white"/>
+                <text x="50" y="32.5" text-anchor="middle" font-size="8" font-weight="bold" fill="#E53935"
+                  textLength="21" lengthAdjust="spacingAndGlyphs">MERAH</text>
+              </svg>
+              <!-- Smoke puff on correct answer -->
+              <transition name="smoke">
+                <div v-if="redSmoke" class="smoke-puff red-smoke"></div>
+              </transition>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- ─── BLUE CAR LANE ─── -->
       <div class="lane lane-blue">
-        <!-- Team name badge centered in lane -->
-        <div class="lane-team-name blue-team-name">🔵 TIM BIRU</div>
+        <div class="lane-tag"><span class="team-dot"></span>Biru</div>
 
-        <div class="track-ground">
-          <div class="road-dash" v-for="n in 8" :key="n"></div>
-        </div>
+        <div class="road">
+          <div class="road-dashes">
+            <div class="road-dash" v-for="n in 8" :key="n"></div>
+          </div>
+          <div class="start-line"></div>
+          <div class="finish-line"></div>
 
-        <div class="car-wrapper" :style="blueCarStyle" :class="{ stunned: blueStunned }">
-          <svg class="car-svg" viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="50" cy="52" rx="38" ry="5" fill="rgba(0,0,0,0.3)"/>
-            <rect x="8"  y="16" width="84" height="26" rx="8"  fill="#1E88E5"/>
-            <rect x="18" y="8"  width="60" height="22" rx="8"  fill="#42A5F5"/>
-            <rect x="26" y="10" width="22" height="14" rx="4"  fill="#B3E5FC" opacity="0.9"/>
-            <rect x="56" y="10" width="18" height="14" rx="4"  fill="#B3E5FC" opacity="0.7"/>
-            <rect x="82" y="14" width="10" height="16" rx="3"  fill="#0D47A1"/>
-            <rect x="78" y="12" width="14" height="4"  rx="2"  fill="#1565C0"/>
-            <circle cx="24" cy="42" r="9"  fill="#212121"/><circle cx="24" cy="42" r="4"  fill="#757575"/>
-            <circle cx="76" cy="42" r="9"  fill="#212121"/><circle cx="76" cy="42" r="4"  fill="#757575"/>
-            <circle cx="24" cy="14" r="8"  fill="#212121"/><circle cx="24" cy="14" r="3.5" fill="#757575"/>
-            <circle cx="76" cy="14" r="8"  fill="#212121"/><circle cx="76" cy="14" r="3.5" fill="#757575"/>
-            <ellipse cx="12" cy="24" rx="5" ry="4" fill="#FFF9C4"/>
-            <ellipse cx="12" cy="32" rx="5" ry="4" fill="#FFF9C4"/>
-            <rect x="36" y="22" width="24" height="12" rx="3" fill="white"/>
-            <text x="48" y="32" text-anchor="middle" font-size="9" font-weight="bold" fill="#1E88E5">BIRU</text>
-          </svg>
-          <transition name="smoke">
-            <div v-if="blueSmoke" class="smoke-puff blue-smoke"></div>
-          </transition>
+          <div class="car-track">
+            <div class="car-wrapper" :style="blueCarStyle" :class="{ stunned: blueStunned }">
+              <svg class="car-svg" viewBox="0 0 100 56" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="50" cy="52" rx="38" ry="5" fill="rgba(0,0,0,0.3)"/>
+                <g transform="translate(100 0) scale(-1 1)">
+                  <rect x="8"  y="16" width="84" height="26" rx="8"  fill="#1E88E5"/>
+                  <rect x="18" y="8"  width="60" height="22" rx="8"  fill="#42A5F5"/>
+                  <rect x="26" y="10" width="22" height="14" rx="4"  fill="#B3E5FC" opacity="0.9"/>
+                  <rect x="56" y="10" width="18" height="14" rx="4"  fill="#B3E5FC" opacity="0.7"/>
+                  <rect x="82" y="14" width="10" height="16" rx="3"  fill="#0D47A1"/>
+                  <rect x="78" y="12" width="14" height="4"  rx="2"  fill="#1565C0"/>
+                  <circle cx="24" cy="42" r="9"  fill="#212121"/><circle cx="24" cy="42" r="4"  fill="#757575"/>
+                  <circle cx="76" cy="42" r="9"  fill="#212121"/><circle cx="76" cy="42" r="4"  fill="#757575"/>
+                  <circle cx="24" cy="14" r="8"  fill="#212121"/><circle cx="24" cy="14" r="3.5" fill="#757575"/>
+                  <circle cx="76" cy="14" r="8"  fill="#212121"/><circle cx="76" cy="14" r="3.5" fill="#757575"/>
+                  <ellipse cx="12" cy="24" rx="5" ry="4" fill="#FFF9C4"/>
+                  <ellipse cx="12" cy="32" rx="5" ry="4" fill="#FFF9C4"/>
+                </g>
+                <rect x="37" y="24" width="26" height="11" rx="3" fill="white"/>
+                <text x="50" y="32.5" text-anchor="middle" font-size="8" font-weight="bold" fill="#1E88E5"
+                  textLength="17" lengthAdjust="spacingAndGlyphs">BIRU</text>
+              </svg>
+              <transition name="smoke">
+                <div v-if="blueSmoke" class="smoke-puff blue-smoke"></div>
+              </transition>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -325,42 +340,43 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 
       <!-- RED calculator -->
       <div class="control-panel red-panel">
-        <div class="panel-header">
-          <h3>🔴 TIM MERAH</h3>
-          <span v-if="redStunned" class="stun-warn">⚠️ Salah! Tunggu...</span>
-        </div>
-        <!-- Display -->
-        <div class="calc-display" :class="{ stunned: redStunned }">
-          <span class="calc-expr">{{ questionText }} =</span>
-          <span class="calc-input">{{ redInput || '_' }}</span>
+        <!-- Team name + display on one row -->
+        <div class="panel-top">
+          <div class="team-name"><span class="team-dot"></span>Tim Merah</div>
+          <div class="calc-display" :class="{ stunned: redStunned }">
+            <span class="calc-expr" :class="{ 'stun-warn': redStunned }">
+              {{ redStunned ? 'Salah! Tunggu…' : questionText + ' =' }}
+            </span>
+            <span class="calc-input">{{ redInput || '_' }}</span>
+          </div>
         </div>
         <!-- Numpad -->
         <div class="numpad">
           <button v-for="k in ['7','8','9','4','5','6','1','2','3','⌫','0','✓']" :key="'r'+k"
-            :class="['numpad-btn', k==='✓' ? 'btn-submit btn-submit-red' : k==='⌫' ? 'btn-del' : 'btn-digit']"
+            :class="['numpad-btn', k==='✓' ? 'btn-submit' : k==='⌫' ? 'btn-del' : 'btn-digit']"
             :disabled="redStunned || gameState !== 'playing' || countdownActive"
             @click="k === '✓' ? redSubmit() : redPress(k)"
           >{{ k }}</button>
         </div>
       </div>
 
-      <div class="divider">VS</div>
+      <div class="divider"><span>VS</span></div>
 
       <!-- BLUE calculator -->
       <div class="control-panel blue-panel">
-        <div class="panel-header">
-          <h3>🔵 TIM BIRU</h3>
-          <span v-if="blueStunned" class="stun-warn">⚠️ Salah! Tunggu...</span>
-        </div>
-        <!-- Display -->
-        <div class="calc-display" :class="{ stunned: blueStunned }">
-          <span class="calc-expr">{{ questionText }} =</span>
-          <span class="calc-input">{{ blueInput || '_' }}</span>
+        <div class="panel-top">
+          <div class="team-name"><span class="team-dot"></span>Tim Biru</div>
+          <div class="calc-display" :class="{ stunned: blueStunned }">
+            <span class="calc-expr" :class="{ 'stun-warn': blueStunned }">
+              {{ blueStunned ? 'Salah! Tunggu…' : questionText + ' =' }}
+            </span>
+            <span class="calc-input">{{ blueInput || '_' }}</span>
+          </div>
         </div>
         <!-- Numpad -->
         <div class="numpad">
           <button v-for="k in ['7','8','9','4','5','6','1','2','3','⌫','0','✓']" :key="'b'+k"
-            :class="['numpad-btn', k==='✓' ? 'btn-submit btn-submit-blue' : k==='⌫' ? 'btn-del' : 'btn-digit']"
+            :class="['numpad-btn', k==='✓' ? 'btn-submit' : k==='⌫' ? 'btn-del' : 'btn-digit']"
             :disabled="blueStunned || gameState !== 'playing' || countdownActive"
             @click="k === '✓' ? blueSubmit() : bluePress(k)"
           >{{ k }}</button>
@@ -373,12 +389,14 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 
 <style scoped>
 /* ── Layout ── */
+/* Atas → bawah: top bar (soal), lintasan, kalkulator. Semua bagian dibagi
+   dari tinggi layar, jadi selalu muat tanpa terpotong. */
 .race-arena {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
   position: relative;
   overflow: hidden;
   font-family: 'Fredoka', sans-serif;
@@ -386,176 +404,240 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 
 .vignette {
   position: absolute; inset: 0;
-  background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.55) 100%);
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.35) 100%);
   pointer-events: none; z-index: 1;
 }
 
+/* Team colours, shared by lanes and keypad panels */
+.lane-red,  .red-panel  { --team: #F44336; --team-light: #FF8A80; --team-soft: rgba(244,67,54,0.14); --team-line: rgba(244,67,54,0.45); }
+.lane-blue, .blue-panel { --team: #2196F3; --team-light: #82B1FF; --team-soft: rgba(33,150,243,0.14); --team-line: rgba(33,150,243,0.45); }
+
+.team-dot {
+  display: inline-block;
+  width: 0.75rem; height: 0.75rem;
+  border-radius: 50%;
+  background: var(--team);
+  box-shadow: 0 0 0 0.1875rem var(--team-soft);
+  flex-shrink: 0;
+}
+
+/* ── Top bar: Kembali · soal · level ── */
+.top-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem 0.5rem;
+  position: relative;
+  z-index: 6;
+  flex-shrink: 0;
+}
+
 .btn-back {
-  position: absolute; top: 18px; left: 20px; z-index: 100;
+  justify-self: start;
   background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 10px 24px;
+  backdrop-filter: blur(0.75rem);
+  border: 0.0625rem solid rgba(255, 255, 255, 0.25);
+  padding: 0.625rem 1.5rem;
   border-radius: 99px;
   color: white;
   font-family: 'Fredoka', sans-serif;
   font-size: 1.1rem; font-weight: 700;
   cursor: pointer;
-  display: flex; align-items: center; gap: 10px;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  display: flex; align-items: center; gap: 0.625rem;
+  transition: background 0.2s, transform 0.2s;
 }
-
 .btn-back::before {
   content: '←';
   display: inline-block;
   font-size: 1.4rem;
   transition: transform 0.3s;
 }
+.btn-back:hover { background: rgba(255, 255, 255, 0.22); transform: translateY(-0.125rem); }
+.btn-back:hover::before { transform: translateX(-0.3125rem); }
 
-.btn-back:hover {
-  background: rgba(255, 255, 255, 0.22);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.4), 0 0 15px rgba(255,255,255,0.1);
-  border-color: rgba(255, 255, 255, 0.5);
+.question-card {
+  grid-column: 2;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0.375rem 2.5rem 0.5rem;
+  border-radius: 1rem;
+  background: rgba(255,255,255,0.06);
+  border: 0.0625rem solid rgba(255,255,255,0.12);
+  box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.3);
+  white-space: nowrap;
+  pointer-events: none;
 }
-
-.btn-back:hover::before {
-  transform: translateX(-5px);
+.question-card.is-hidden { visibility: hidden; }
+.q-label {
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 0.72rem; font-weight: 700;
+  color: #FFC107;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.q-text {
+  font-size: 3rem; font-weight: 700; line-height: 1.1;
+  color: white;
 }
 
 .level-badge {
-  position: absolute; top: 14px; right: 16px; z-index: 100;
-  background: rgba(255,255,255,0.15);
-  border: 2px solid rgba(255,255,255,0.35);
-  color: white; padding: 8px 18px;
-  border-radius: 20px;
-  font-family: 'Fredoka', sans-serif;
-  font-size: 1.1rem; font-weight: bold;
-  backdrop-filter: blur(10px);
+  grid-column: 3;
+  justify-self: end;
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.08);
+  border: 0.0625rem solid rgba(255,255,255,0.18);
+  color: white;
+  font-size: 1.05rem; font-weight: 700;
+}
+.level-dot {
+  width: 0.625rem; height: 0.625rem;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
-/* ── Question inside track (centered between 2 lanes) ── */
-.question-board-track {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center; padding: 8px 36px;
-  z-index: 20; white-space: nowrap;
-  pointer-events: none;
-}
-.q-label { font-size: 0.9rem; color: #FFF176; display: block; margin-bottom: 2px; }
-.q-text  { font-size: 2.8rem; margin: 0; color: white; }
+.bounce { display: inline-block; animation: bounceScale 0.8s ease-in-out infinite alternate; }
+@keyframes bounceScale { from { transform: scale(1); } to { transform: scale(1.05); } }
 
-/* ── Team name centered inside each lane ── */
-.lane-team-name {
-  position: absolute;
-  left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  font-family: 'Fredoka', sans-serif;
-  font-size: 1.1rem; font-weight: bold;
-  letter-spacing: 1px;
-  background: rgba(0,0,0,0.35);
-  padding: 4px 16px; border-radius: 20px;
-  pointer-events: none; z-index: 4;
-  white-space: nowrap;
-  backdrop-filter: blur(4px);
+/* ── Result (game over) ── */
+.result-overlay {
+  position: absolute; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8,12,24,0.6);
+  backdrop-filter: blur(0.25rem);
 }
-.red-team-name  { color: #FF8A80; border: 1px solid rgba(244,67,54,0.4); }
-.blue-team-name { color: #82B1FF; border: 1px solid rgba(33,150,243,0.4); }
-
-.result-board {
-  position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-  text-align: center; padding: 30px 60px; z-index: 20;
+.result-card {
+  min-width: 26rem;
+  padding: 2rem 3rem 2.25rem;
+  text-align: center;
+  color: white;
+  border-radius: 1.5rem;
+  background: #18223d;
+  border: 0.0625rem solid rgba(255,255,255,0.12);
+  border-top: 0.375rem solid var(--win);
+  box-shadow: 0 2rem 4rem rgba(0,0,0,0.5);
 }
-.trophy    { font-size: 5rem; }
-.result-board h1 { font-size: 2.8rem; margin: 0 0 8px; }
-.result-board p  { font-size: 1.2rem; margin-bottom: 20px; color: #eee; }
-.red-text  { color: #FF5252; }
-.blue-text { color: #448AFF; }
-
-.bounce { animation: bounceScale 0.8s ease-in-out infinite alternate; }
-@keyframes bounceScale { from { transform: scale(1); } to { transform: scale(1.08); } }
+.result-card.red-win  { --win: #FF5252; }
+.result-card.blue-win { --win: #448AFF; }
+.trophy { font-size: 4rem; line-height: 1; }
+.result-eyebrow {
+  margin-top: 0.75rem;
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 0.75rem; font-weight: 700;
+  color: #FFC107;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.result-card h1 {
+  margin: 0.25rem 0 0.375rem;
+  font-size: 2.6rem; line-height: 1.1;
+  color: var(--win);
+}
+.result-card p {
+  margin: 0 0 1.5rem;
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 1rem;
+  color: rgba(255,255,255,0.75);
+}
+.result-actions { display: flex; justify-content: center; gap: 0.75rem; }
+.btn-again, .btn-level {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 99px;
+  font-family: 'Fredoka', sans-serif; font-size: 1.15rem; font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+.btn-again {
+  border: none;
+  background: linear-gradient(135deg, #FFC107, #FF6D00);
+  color: #1f1300;
+  box-shadow: 0 0.5rem 1.25rem rgba(255,109,0,0.25);
+}
+.btn-level {
+  border: 0.0625rem solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+}
+.btn-again:hover, .btn-level:hover { transform: translateY(-0.125rem); }
+.btn-level:hover { background: rgba(255,255,255,0.16); }
 
 /* ── Track area ── */
 .track-area {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem 1rem 0.75rem;
   position: relative;
   z-index: 5;
-  gap: 6px;
-  padding: 6px 0;
-  max-height: 52vh;
 }
 
-/* Finish & Start lines */
-.finish-line {
-  position: absolute;
-  right: 14%;
-  top: 0; bottom: 0;
-  width: 28px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 8;
-}
-.checker-col { flex: 1; background: repeating-linear-gradient(180deg, black 0%, black 50%, white 50%, white 100%); }
-.checker-col:nth-child(even) { background: repeating-linear-gradient(180deg, white 0%, white 50%, black 50%, black 100%); }
-.finish-flag {
-  position: absolute; top: -24px; left: 50%; transform: translateX(-50%);
-  font-size: 2rem; filter: drop-shadow(0 2px 4px black);
-}
-
-.start-line {
-  position: absolute;
-  left: 3%;
-  top: 0; bottom: 0;
-  width: 6px;
-  background: white;
-  z-index: 8;
-  border-radius: 3px;
-  opacity: 0.7;
-}
-
-/* ── Individual lane ── */
+/* ── Individual lane: [label] [road with start → finish] ── */
 .lane {
+  --car-w: 8.5rem;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  border: 0.0625rem solid var(--team-line);
+  background: linear-gradient(90deg, var(--team-soft), rgba(255,255,255,0.02));
+}
+
+.lane-tag {
+  flex: 0 0 6.5rem;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  border-right: 0.0625rem solid var(--team-line);
+  background: var(--team-soft);
+  color: var(--team-light);
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 0.85rem; font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.road {
   flex: 1;
   position: relative;
-  border-radius: 12px;
-  margin: 0 1%;
-  overflow: hidden;
-  min-height: 80px;
+  min-width: 0;
 }
 
-.lane-red  { background: linear-gradient(90deg, #b71c1c22, #f4433622, #b71c1c22); border: 2px solid rgba(244,67,54,0.5); }
-.lane-blue { background: linear-gradient(90deg, #0d47a122, #2196f322, #0d47a122); border: 2px solid rgba(33,150,243,0.5); }
-
-/* Lane label */
-.lane-edge {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  writing-mode: vertical-rl; text-orientation: mixed;
-  font-size: 0.9rem; font-weight: bold; padding: 4px 6px;
-  letter-spacing: 1px; opacity: 0.7;
-}
-.red-edge  { color: #FF8A80; }
-.blue-edge { color: #82B1FF; }
-
-/* Road dashes */
-.track-ground {
-  display: flex;
-  align-items: center;
+/* Road dashes along the middle of the lane */
+.road-dashes {
   position: absolute; inset: 0;
-  gap: 0;
-  padding: 0 3%;
+  display: flex; align-items: center;
+  padding: 0 2.5rem 0 1rem;
 }
 .road-dash {
   flex: 1;
-  height: 3px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 2px;
-  margin: 0 6px;
+  height: 0.1875rem;
+  background: rgba(255,255,255,0.12);
+  border-radius: 0.125rem;
+  margin: 0 0.375rem;
+}
+
+/* Start & finish lines — per lane */
+.start-line {
+  position: absolute;
+  left: 0.5rem; top: 0; bottom: 0;
+  width: 0.25rem;
+  background: rgba(255,255,255,0.55);
+}
+.finish-line {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 1.5rem;
+  background: repeating-conic-gradient(#111 0 25%, #fff 0 50%) 0 0 / 0.75rem 0.75rem;
+}
+
+/* Cars ride between the start line and the finish line */
+.car-track {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 1rem; right: 1.5rem;
 }
 
 /* ── Car wrapper ── */
@@ -564,7 +646,8 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
   top: 50%;
   transform: translateY(-50%);
   transition: left 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  width: 100px;
+  width: var(--car-w);
+  z-index: 2;
 }
 
 .car-wrapper.stunned {
@@ -573,20 +656,21 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 
 @keyframes swerve {
   0%   { transform: translateY(-50%) rotate(0deg); }
-  25%  { transform: translateY(calc(-50% - 10px)) rotate(-8deg); }
-  75%  { transform: translateY(calc(-50% + 10px)) rotate(8deg); }
+  25%  { transform: translateY(calc(-50% - 0.625rem)) rotate(-8deg); }
+  75%  { transform: translateY(calc(-50% + 0.625rem)) rotate(8deg); }
   100% { transform: translateY(-50%) rotate(0deg); }
 }
 
 .car-svg {
+  display: block;
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 6px 8px rgba(0,0,0,0.6));
+  filter: drop-shadow(0 0.375rem 0.5rem rgba(0,0,0,0.6));
   animation: carBounce 0.3s ease-in-out infinite alternate;
 }
 @keyframes carBounce {
   from { transform: translateY(0); }
-  to   { transform: translateY(-3px); }
+  to   { transform: translateY(-0.1875rem); }
 }
 
 /* Smoke on accelerate */
@@ -595,7 +679,7 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
   right: 90%;
   top: 50%;
   transform: translateY(-50%);
-  width: 30px; height: 30px;
+  width: 1.875rem; height: 1.875rem;
   border-radius: 50%;
   pointer-events: none;
 }
@@ -610,121 +694,128 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
 /* ── Controls ── */
 .split-controls {
   display: flex;
-  height: 48vh;
-  min-height: 260px;
-  background: rgba(0,0,0,0.75);
-  backdrop-filter: blur(10px);
-  border-top: 2px solid rgba(255,255,255,0.1);
+  flex: 1.1 1 0;
+  min-height: 0;
+  background: rgba(6,10,22,0.55);
+  border-top: 0.0625rem solid rgba(255,255,255,0.08);
   position: relative;
   z-index: 10;
-  flex-shrink: 0;
 }
 
+/* Slim divider with a VS badge in the middle */
 .divider {
-  width: 60px;
+  flex: 0 0 3.5rem;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.divider::before {
+  content: '';
+  position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 0.0625rem;
+  background: rgba(255,255,255,0.1);
+}
+.divider span {
+  position: relative;
+  width: 2.75rem; height: 2.75rem;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
   background: #FFC107;
   color: #1a1a1a;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 2rem;
-  box-shadow: 0 0 20px rgba(255,193,7,0.4);
+  font-size: 1.05rem; font-weight: 700;
+  box-shadow: 0 0 0 0.375rem rgba(255,193,7,0.15);
 }
 
 .control-panel {
-  flex: 1; padding: 14px 18px;
-  display: flex; flex-direction: column; gap: 10px;
+  flex: 1; padding: 0.75rem 1.125rem 0.875rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  min-width: 0; min-height: 0;
+  border-top: 0.25rem solid var(--team);
 }
 
-.red-panel  { border-top: 5px solid #F44336; }
-.blue-panel { border-top: 5px solid #2196F3; }
-
-.panel-header {
-  display: flex; justify-content: space-between; align-items: center;
+/* Team name + display on one row, keypad gets the rest */
+.panel-top {
+  display: flex; align-items: center; gap: 1rem;
+  flex-shrink: 0;
 }
-.panel-header h3 {
-  margin: 0; font-size: 1.5rem;
-  font-family: 'Fredoka', sans-serif; color: white;
+.team-name {
+  display: flex; align-items: center; gap: 0.625rem;
+  color: white;
+  font-size: 1.45rem; font-weight: 700; line-height: 1.2;
+  white-space: nowrap;
 }
-.stun-warn {
-  color: #FF5252; font-weight: bold; font-size: 0.9rem;
-  animation: blink 0.4s infinite;
-}
-@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.15; } }
 
 /* Calculator display */
 .calc-display {
-  background: rgba(0,0,0,0.5);
-  border: 2px solid rgba(255,255,255,0.15);
-  border-radius: 10px;
-  padding: 8px 14px;
+  flex: 1; min-width: 0;
+  background: rgba(0,0,0,0.35);
+  border: 0.0625rem solid rgba(255,255,255,0.12);
+  border-radius: 0.75rem;
+  padding: 0.375rem 1rem;
   display: flex; align-items: center; justify-content: space-between;
-  min-height: 44px;
-  transition: border-color 0.3s;
+  transition: border-color 0.3s, background 0.3s;
 }
 .calc-display.stunned {
   border-color: rgba(255,82,82,0.7);
   background: rgba(255,82,82,0.1);
 }
 .calc-expr {
-  font-size: 1.1rem; color: rgba(255,255,255,0.55);
-  font-family: 'Fredoka', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 1.15rem; font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  white-space: nowrap;
 }
+.calc-expr.stun-warn {
+  color: #FF5252;
+  animation: blink 0.4s infinite;
+}
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.25; } }
 .calc-input {
-  font-size: 1.8rem; font-weight: bold; color: white;
-  font-family: 'Fredoka', sans-serif;
-  letter-spacing: 2px;
+  font-size: 2.2rem; font-weight: 700; line-height: 1.1;
+  color: white;
+  letter-spacing: 0.125rem;
 }
 
-/* Numpad 3-col grid */
+/* Numpad 3-col grid — 4 baris dibagi rata sisa tinggi panel */
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
   flex: 1;
   min-height: 0;
 }
 
 .numpad-btn {
-  border: none; border-radius: 10px; cursor: pointer;
-  font-family: 'Fredoka', sans-serif; font-size: 1.3rem; font-weight: bold;
-  color: white; transition: all 0.1s; min-height: 0;
+  border: 0.0625rem solid rgba(255,255,255,0.1);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-family: 'Fredoka', sans-serif; font-size: 2rem; font-weight: 700;
+  line-height: 1; padding: 0;
+  color: white;
+  min-height: 0;
+  transition: background 0.1s, transform 0.1s;
+  touch-action: manipulation;
 }
-.numpad-btn:active:not(:disabled) { transform: scale(0.92); }
+.numpad-btn:active:not(:disabled) { transform: scale(0.95); }
 .numpad-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.btn-digit {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
-}
-.btn-digit:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
+.btn-digit { background: rgba(255,255,255,0.07); }
+.btn-digit:hover:not(:disabled) { background: rgba(255,255,255,0.13); }
 
 .btn-del {
-  background: rgba(255,152,0,0.3);
-  border: 1px solid rgba(255,152,0,0.5);
-  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
-  font-size: 1.1rem;
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.7);
+  font-size: 1.6rem;
 }
-.btn-del:hover:not(:disabled) { background: rgba(255,152,0,0.5); }
+.btn-del:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
 
-.btn-submit { font-size: 1.6rem; }
-.btn-submit-red  {
-  background: linear-gradient(180deg, #F44336, #b71c1c);
-  box-shadow: 0 4px 0 #7f0000;
+.btn-submit {
+  border-color: transparent;
+  background: var(--team);
+  font-size: 2.2rem;
+  box-shadow: 0 0.375rem 1rem var(--team-soft);
 }
-.btn-submit-blue {
-  background: linear-gradient(180deg, #2196F3, #0d47a1);
-  box-shadow: 0 4px 0 #002171;
-}
-.btn-submit:active:not(:disabled) { transform: scale(0.92); box-shadow: none !important; }
-
-/* Re-use global glass-panel-dark if not scoped */
-.glass-panel-dark {
-  background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-}
+.btn-submit:hover:not(:disabled) { filter: brightness(1.08); }
 
 /* ── Countdown Overlay ── */
 .countdown-overlay {
@@ -732,7 +823,7 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
   background: rgba(0, 0, 0, 0.78);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(0.375rem);
 }
 
 .countdown-number {
@@ -742,8 +833,8 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
   line-height: 1;
   text-align: center;
   white-space: pre-line;
-  text-shadow: 0 0 60px currentColor, 0 8px 24px rgba(0,0,0,0.8);
-  filter: drop-shadow(0 0 40px currentColor);
+  text-shadow: 0 0 3.75rem currentColor, 0 0.5rem 1.5rem rgba(0,0,0,0.8);
+  filter: drop-shadow(0 0 2.5rem currentColor);
 }
 
 .cd-red    { color: #FF5252; }
@@ -755,8 +846,8 @@ const blueCarStyle = computed(() => ({ left: `${2 + blueProgress.value * 0.80}%`
   font-family: 'Fredoka', sans-serif;
   font-size: 1.8rem;
   color: rgba(255,255,255,0.5);
-  margin-top: 10px;
-  letter-spacing: 4px;
+  margin-top: 0.625rem;
+  letter-spacing: 0.25rem;
   text-transform: uppercase;
 }
 

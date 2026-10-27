@@ -19,6 +19,14 @@
   --text-light: #ffffff;
 }
 
+/* Ukuran dasar ikut layar: 16px di 1280×720, 24px di 1920×1080, 48px di 4K.
+   Semua ukuran komponen pakai rem, jadi tampilan tetap proporsional
+   dari laptop sampai TV/panel interaktif 75". */
+html {
+  font-size: max(10px, min(1.25vw, 2.2222vh));
+  font-size: max(10px, min(1.25vw, 2.2222svh));
+}
+
 body {
   margin: 0;
   display: flex;

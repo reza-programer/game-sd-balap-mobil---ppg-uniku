@@ -1,5 +1,6 @@
 <script setup>
 import raceTrackImg from '../assets/race_track.png';
+import logoUniku    from '../assets/logo-uniku.png';
 import { ref } from 'vue';
 
 const emit = defineEmits(['start-game']);
@@ -19,69 +20,69 @@ const photoError = ref(false);
       <!-- ═══════════════════════════════════════════ -->
       <div class="nametag-section">
 
-        <!-- Lanyard cord -->
-        <div class="lanyard-cord">
-          <div class="cord-left"></div>
-          <div class="cord-right"></div>
+        <!-- Lanyard strap -->
+        <div class="lanyard">
+          <div class="strap strap-left"></div>
+          <div class="strap strap-right"></div>
         </div>
 
-        <!-- Lanyard clip -->
+        <!-- Metal clip -->
         <div class="lanyard-clip">
+          <div class="clip-ring"></div>
           <div class="clip-body"></div>
-          <div class="clip-hole"></div>
         </div>
 
         <!-- ID Card -->
         <div class="id-card">
+          <div class="card-slot"></div>
 
-          <!-- Decorative top stripe with logo/title -->
+          <!-- University identity -->
           <div class="card-header">
-            <div class="header-logo">🎓</div>
+            <img :src="logoUniku" alt="Logo Universitas Kuningan" class="uni-logo" />
             <div class="header-text">
-              <div class="header-school">PPG UNIKU 2026</div>
-              <div class="header-subtitle">PEMBUAT GAME EDUKASI</div>
+              <div class="header-school">Universitas<br />Kuningan</div>
+              <div class="header-subtitle">Pendidikan Profesi Guru</div>
             </div>
           </div>
+          <div class="card-stripe"></div>
 
-          <!-- Thin colored line -->
-          <div class="card-accent-line"></div>
-
-          <!-- Photo section -->
-          <div class="card-photo-section">
+          <!-- Photo + name -->
+          <div class="card-identity" :style="{ '--watermark': `url(${logoUniku})` }">
             <div class="photo-frame">
               <img
                 v-if="!photoError"
                 :src="photoSrc"
-                alt="Roysita"
+                alt="Rosita"
                 class="card-photo"
                 @error="photoError = true"
               />
               <div v-else class="card-initials">RS</div>
             </div>
-          </div>
 
-          <!-- Name & Info -->
-          <div class="card-body">
             <h2 class="card-name">Rosita</h2>
-            <div class="card-title-badge">PPG UNIKU</div>
-
-            <div class="card-divider"></div>
-
-            <div class="card-details">
-              <div class="card-detail-row">
-                <span class="detail-icon">🎮</span>
-                <span>Game Developer</span>
-              </div>
-              <div class="card-detail-row">
-                <span class="detail-icon">📚</span>
-                <span>Balap Perkalian</span>
-              </div>
-              <div class="card-detail-row">
-                <span class="detail-icon">🏫</span>
-                <span>Sekolah Dasar</span>
-              </div>
-            </div>
+            <div class="card-role">Pembuat Game Edukasi</div>
+            <div class="card-badge">PPG UNIKU 2026</div>
           </div>
+
+          <!-- Details -->
+          <dl class="card-details">
+            <div class="card-detail-row">
+              <dt>Fakultas</dt>
+              <dd>FKIP</dd>
+            </div>
+            <div class="card-detail-row">
+              <dt>Peran</dt>
+              <dd>Mahasiswa PPG</dd>
+            </div>
+            <div class="card-detail-row">
+              <dt>Game</dt>
+              <dd>Balap Perkalian</dd>
+            </div>
+            <div class="card-detail-row">
+              <dt>Jenjang</dt>
+              <dd>Sekolah Dasar</dd>
+            </div>
+          </dl>
 
           <!-- Social media footer -->
           <div class="card-footer">
@@ -139,34 +140,32 @@ const photoError = ref(false);
 
         <!-- Title -->
         <div class="title-block">
-          <div class="car-icon">🏎️</div>
-          <h1>Balap Perkalian</h1>
-          <p class="tagline">Ayo Belajar Perkalian Sambil Balapan!</p>
+          <div class="eyebrow">Game Edukasi Matematika · Sekolah Dasar</div>
+          <div class="title-row">
+            <h1>Balap Perkalian</h1>
+            <span class="car-icon">🏎️</span>
+          </div>
+          <p class="tagline">Ayo belajar perkalian sambil balapan!</p>
         </div>
 
         <!-- Game showcase -->
         <div class="game-showcase">
-          <div class="showcase-glow"></div>
           <div class="showcase-image" :style="{ backgroundImage: `url(${raceTrackImg})` }"></div>
           <div class="showcase-info">
-            <h2>🏁 Balap Mobil</h2>
-            <p>
-              Jawab perkalian lebih cepat<br>
-              dari lawanmu. Siapa duluan<br>
-              menyentuh garis finish?
-            </p>
-            <div class="features">
-              <span class="feat">⭐ 4 Level</span>
-              <span class="feat">👥 1 vs 1</span>
-              <span class="feat">🚀 Real-time</span>
-            </div>
+            <h2>Cara Bermain</h2>
+            <p>Jawab perkalian lebih cepat dari lawanmu. Siapa duluan menyentuh garis finish?</p>
+
+            <ul class="stats">
+              <li><strong>4</strong><span>Level</span></li>
+              <li><strong>1 vs 1</strong><span>Tim</span></li>
+              <li><strong>1–10</strong><span>Angka</span></li>
+            </ul>
+
             <button class="btn-main-start" @click="emit('start-game')">
-              Mulai Balapan! <span class="arrow">→</span>
+              Mulai Balapan <span class="arrow">→</span>
             </button>
           </div>
         </div>
-
-        <div class="footer-tag">Game Edukasi Matematika SD 🎓</div>
       </div>
 
     </div>
@@ -176,7 +175,7 @@ const photoError = ref(false);
 <style scoped>
 /* ────────────────── LAYOUT ────────────────── */
 .main-menu {
-  width: 100vw; height: 100vh;
+  width: 100%; height: 100%;
   position: relative; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Fredoka', sans-serif;
@@ -195,285 +194,361 @@ const photoError = ref(false);
 .menu-layout {
   position: relative; z-index: 10;
   display: flex; align-items: center;
-  gap: 52px;
-  width: 92%; max-width: 1100px;
-  height: 90vh;
-  max-height: 680px;
+  gap: 3.25rem;
+  width: 92%; max-width: 68.75rem;
+  height: 90%;
+  max-height: 42.5rem;
 }
 
 /* ────────────────── NAMETAG SECTION ────────────────── */
+/* Kartu identitas bergaya kartu kampus: warna Universitas Kuningan
+   (biru-tosca #006680 + kuning #FEFF67 dari logo), huruf Plus Jakarta Sans. */
 .nametag-section {
+  --uniku: #006680;
+  --uniku-dark: #004a5e;
+  --uniku-yellow: #FEFF67;
+  --ink: #0f2530;
+  --muted: #73848d;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  animation: nametag-swing 4s ease-in-out infinite alternate;
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  animation: nametag-swing 5s ease-in-out infinite alternate;
   transform-origin: top center;
 }
 @keyframes nametag-swing {
-  from { transform: rotate(-2deg) translateY(0);  }
-  to   { transform: rotate(2deg)  translateY(-8px); }
+  from { transform: rotate(-1.2deg); }
+  to   { transform: rotate(1.2deg) translateY(-0.25rem); }
 }
 
-/* ── Lanyard Cord ── */
-.lanyard-cord {
-  display: flex;
-  justify-content: center;
-  gap: 36px;
-  height: 60px;
+/* ── Lanyard: two ribbons meeting at the clip ── */
+.lanyard {
   position: relative;
-  z-index: 1;
+  width: 6rem; height: 4.5rem;
+  -webkit-mask-image: linear-gradient(to top, black 55%, transparent);
+  mask-image: linear-gradient(to top, black 55%, transparent);
 }
-.cord-left, .cord-right {
-  width: 4px;
-  height: 100%;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #8B6914 0%, #FFC107 40%, #8B6914 100%);
-  box-shadow: 0 0 6px rgba(255,193,7,0.4);
+.strap {
+  position: absolute; bottom: 0; left: 50%;
+  width: 1rem; height: 5rem;
+  background: linear-gradient(90deg, var(--uniku-dark), var(--uniku) 30%, var(--uniku) 70%, var(--uniku-dark));
+  transform-origin: bottom center;
 }
-.cord-left  { transform: rotate(8deg);  transform-origin: top center; }
-.cord-right { transform: rotate(-8deg); transform-origin: top center; }
+.strap::after {
+  content: '';
+  position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 0.125rem; transform: translateX(-50%);
+  background: var(--uniku-yellow); opacity: 0.75;
+}
+.strap-left  { transform: translateX(-50%) rotate(18deg); }
+.strap-right { transform: translateX(-50%) rotate(-18deg); }
 
-/* ── Clip / hook ── */
+/* ── Metal clip ── */
 .lanyard-clip {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: -8px;
-  z-index: 2;
+  margin-top: -0.5rem;
+  position: relative;
+  z-index: 3;
+}
+.clip-ring {
+  width: 1.25rem; height: 1.25rem;
+  border-radius: 50%;
+  border: 0.25rem solid #b9c3c9;
 }
 .clip-body {
-  width: 28px; height: 16px;
-  background: linear-gradient(180deg, #aaa 0%, #ddd 50%, #aaa 100%);
-  border-radius: 6px 6px 0 0;
-  border: 2px solid #888;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-.clip-hole {
-  width: 14px; height: 8px;
-  background: transparent;
-  border: 3px solid #999;
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  margin-top: -2px;
+  width: 2.25rem; height: 1.375rem;
+  margin-top: -0.25rem;
+  border-radius: 0.375rem 0.375rem 0.25rem 0.25rem;
+  background: linear-gradient(180deg, #eef2f4, #a9b4ba);
+  box-shadow: 0 0.125rem 0.375rem rgba(0,0,0,0.35);
 }
 
 /* ── The ID Card itself ── */
 .id-card {
-  width: 230px;
-  background: white;
-  border-radius: 16px;
+  width: 15.5rem;
+  margin-top: -0.625rem;
+  background: #fff;
+  border-radius: 1rem;
   overflow: hidden;
-  box-shadow:
-    0 24px 60px rgba(0,0,0,0.7),
-    0 0 0 4px rgba(255,255,255,0.1);
   position: relative;
-  z-index: 2;
+  box-shadow:
+    0 1.5rem 3.5rem rgba(0,0,0,0.55),
+    0 0 0 0.0625rem rgba(255,255,255,0.08);
 }
 
-/* Top header */
-.card-header {
-  background: linear-gradient(135deg, #FF5722, #FF8F00);
-  padding: 14px 16px 12px;
-  display: flex; align-items: center; gap: 10px;
+/* Slot punched in the card where the clip goes through */
+.card-slot {
+  position: absolute; top: 0.375rem; left: 50%;
+  transform: translateX(-50%);
+  width: 2.75rem; height: 0.4375rem;
+  border-radius: 99px;
+  background: #dfe6ea;
+  box-shadow: inset 0 0.0625rem 0.125rem rgba(0,0,0,0.25);
 }
-.header-logo { font-size: 2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-.header-text { display: flex; flex-direction: column; }
+
+/* University identity */
+.card-header {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1.25rem 1.125rem 0.75rem;
+}
+.uni-logo {
+  width: 3rem; height: 3rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.header-text { display: flex; flex-direction: column; text-align: left; }
 .header-school {
-  font-size: 0.7rem; font-weight: 900;
-  color: white; letter-spacing: 1.5px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  font-size: 0.95rem; font-weight: 800; line-height: 1.05;
+  color: var(--uniku);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 .header-subtitle {
-  font-size: 0.6rem; color: rgba(255,255,255,0.8);
-  letter-spacing: 1px;
+  margin-top: 0.25rem;
+  font-size: 0.66rem; font-weight: 600;
+  color: var(--muted);
 }
 
-.card-accent-line {
-  height: 5px;
-  background: linear-gradient(90deg, #FFC107, #FF5722, #FFC107);
+.card-stripe {
+  height: 0.375rem;
+  background: linear-gradient(180deg, var(--uniku) 0 65%, var(--uniku-yellow) 65% 100%);
 }
 
-/* Photo */
-.card-photo-section {
-  display: flex; justify-content: center;
-  padding: 20px 16px 10px;
+/* Photo + name */
+.card-identity {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 1.125rem 1rem 0.875rem;
+  background: linear-gradient(180deg, rgba(0,102,128,0.07), rgba(0,102,128,0) 75%);
+}
+/* Faint emblem watermark behind the photo */
+.card-identity::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--watermark) center 38% / 10.5rem no-repeat;
+  opacity: 0.045;
+  pointer-events: none;
 }
 .photo-frame {
-  width: 110px; height: 110px;
-  border-radius: 12px;
-  border: 5px solid #FF5722;
+  position: relative;
+  width: 6.5rem; height: 8.125rem;
+  border-radius: 0.625rem;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(255,87,34,0.4), 0 0 0 3px rgba(255,193,7,0.3);
-  background: linear-gradient(135deg, #FF5722, #FFC107);
+  border: 0.1875rem solid #fff;
+  box-shadow: 0 0 0 0.125rem var(--uniku), 0 0.5rem 1.25rem rgba(0,40,55,0.25);
+  background: #dfe7ea;
   display: flex; align-items: center; justify-content: center;
 }
 .card-photo {
   width: 100%; height: 100%;
-  object-fit: cover; object-position: top;
+  object-fit: cover; object-position: center top;
 }
 .card-initials {
-  font-size: 2.5rem; font-weight: 900;
-  color: white; letter-spacing: 3px;
-}
-
-/* Body */
-.card-body {
-  padding: 10px 18px 14px;
-  text-align: center;
+  font-size: 2.25rem; font-weight: 800;
+  color: var(--uniku); letter-spacing: 0.1rem;
 }
 .card-name {
-  font-size: 1.6rem; margin: 0 0 6px;
-  color: #1a1a1a; font-weight: 900;
+  margin: 0.875rem 0 0.125rem;
+  font-size: 1.45rem; font-weight: 800; line-height: 1.15;
+  color: var(--ink);
+  letter-spacing: -0.01em;
 }
-.card-title-badge {
-  display: inline-block;
-  background: linear-gradient(135deg, #FF5722, #FF8F00);
-  color: white; font-size: 0.75rem; font-weight: 700;
-  padding: 4px 14px; border-radius: 20px;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(255,87,34,0.35);
+.card-role {
+  font-size: 0.7rem; font-weight: 700;
+  color: var(--uniku);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
-.card-divider {
-  height: 2px; margin: 12px auto;
-  background: linear-gradient(90deg, transparent, #eee, transparent);
+.card-badge {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  background: var(--uniku-yellow);
+  color: var(--ink);
+  font-size: 0.66rem; font-weight: 800;
+  letter-spacing: 0.06em;
 }
+
+/* Details as label · value rows */
 .card-details {
-  display: flex; flex-direction: column; gap: 6px;
-  text-align: left;
+  margin: 0;
+  padding: 0.75rem 1.125rem 0.875rem;
+  border-top: 0.0625rem dashed #d6dfe3;
+  display: flex; flex-direction: column; gap: 0.375rem;
 }
 .card-detail-row {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.85rem; color: #555;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem;
+  font-size: 0.78rem;
 }
-.detail-icon { font-size: 1rem; flex-shrink: 0; }
+.card-detail-row dt { color: var(--muted); font-weight: 600; }
+.card-detail-row dd { margin: 0; color: var(--ink); font-weight: 700; text-align: right; }
 
 /* Social footer */
 .card-footer {
-  background: #f4f4f4;
-  border-top: 1px solid #eee;
-  padding: 12px 16px 10px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.625rem 1.125rem 0.6875rem;
+  background: #f3f6f8;
+  border-top: 0.0625rem solid #e4eaed;
+  border-bottom: 0.375rem solid var(--uniku);
 }
 
 .social-row {
-  display: flex; gap: 10px; align-items: center; justify-content: center;
+  display: flex; gap: 0.4375rem; align-items: center;
 }
 
 .social-btn {
-  width: 36px; height: 36px;
-  border-radius: 10px;
+  width: 1.875rem; height: 1.875rem;
+  border-radius: 0.5rem;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
   text-decoration: none;
 }
 .social-btn svg {
-  width: 18px; height: 18px;
+  width: 0.9375rem; height: 0.9375rem;
   fill: white;
 }
 .social-btn:hover {
-  transform: translateY(-3px) scale(1.1);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+  transform: translateY(-0.125rem);
+  box-shadow: 0 0.375rem 0.75rem rgba(0,0,0,0.2);
 }
 
 /* Brand colors */
-.linkedin  { background: #0A66C2; box-shadow: 0 3px 0 #084d91; }
+.linkedin  { background: #0A66C2; }
 .instagram {
   background: radial-gradient(circle at 30% 110%, #fdf497, #fe820a 25%, #fd1d1d 50%, #e1306c 65%, #833ab4 80%, #c13584 100%);
-  box-shadow: 0 3px 0 #be185d;
 }
-.tiktok    { background: #010101; box-shadow: 0 3px 0 #333; }
+.tiktok    { background: #010101; }
 
 .social-label {
-  font-size: 0.62rem; color: #aaa;
-  letter-spacing: 1.5px; font-weight: 600;
+  order: -1; /* label on the left, icons on the right */
+  font-size: 0.62rem; font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 /* ────────────────── RIGHT SECTION ────────────────── */
 .right-section {
   flex: 1;
+  min-width: 0;
   display: flex; flex-direction: column;
   justify-content: center;
-  gap: 20px;
+  gap: 1.75rem;
 }
 
+/* Title */
 .title-block { color: white; }
+.eyebrow {
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 0.8rem; font-weight: 700;
+  color: #FFC107;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.title-row {
+  display: flex; align-items: center; gap: 1rem;
+  margin: 0.5rem 0 0.375rem;
+}
+.title-block h1 {
+  font-size: 3.4rem; margin: 0; line-height: 1.05;
+  background: linear-gradient(135deg, #FFC107, #FF5722 70%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 .car-icon {
-  font-size: 3.5rem; display: block;
+  font-size: 2.6rem; display: block;
   animation: carBounce 1.5s ease-in-out infinite alternate;
-  filter: drop-shadow(0 6px 12px rgba(255,150,0,0.5));
 }
 @keyframes carBounce {
   from { transform: translateY(0) rotate(-3deg); }
-  to   { transform: translateY(-10px) rotate(3deg); }
+  to   { transform: translateY(-0.375rem) rotate(3deg); }
 }
-.title-block h1 {
-  font-size: 3.2rem; margin: 6px 0 4px;
-  background: linear-gradient(135deg, #FFC107, #FF5722, #E91E63);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-  filter: drop-shadow(0 4px 8px rgba(255,87,34,0.3));
+.tagline {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 1.05rem; font-weight: 500;
+  color: rgba(255,255,255,0.7);
 }
-.tagline { font-size: 1.1rem; color: rgba(255,255,255,0.65); margin: 0; }
 
 /* Showcase */
 .game-showcase {
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  border: 2px solid rgba(255,255,255,0.1);
-  border-radius: 22px;
-  display: flex; overflow: hidden;
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 16px 50px rgba(0,0,0,0.5);
+  display: flex;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: rgba(255,255,255,0.05);
+  border: 0.0625rem solid rgba(255,255,255,0.12);
+  box-shadow: 0 1.25rem 3rem rgba(0,0,0,0.35);
+  transition: border-color 0.2s;
 }
-.game-showcase:hover {
-  transform: translateY(-6px) scale(1.01);
-  border-color: rgba(255,193,7,0.4);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 30px rgba(255,193,7,0.1);
-}
-.showcase-glow {
-  position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(135deg, rgba(255,255,255,0.07) 0%, transparent 55%);
-}
+.game-showcase:hover { border-color: rgba(255,193,7,0.35); }
+
 .showcase-image {
-  width: 38%; min-height: 200px;
+  width: 42%;
+  min-height: 13.5rem;
   background-size: cover; background-position: center;
-  background-color: #1a1a2e; position: relative;
+  background-color: #1a1a2e;
+  border-right: 0.0625rem solid rgba(255,255,255,0.12);
 }
-.showcase-image::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent 60%, rgba(15,20,40,0.95) 100%);
-}
+
 .showcase-info {
-  flex: 1; padding: 24px 30px;
-  display: flex; flex-direction: column; justify-content: center; gap: 10px;
+  flex: 1;
+  padding: 1.75rem 2rem;
+  display: flex; flex-direction: column; justify-content: center;
   color: white;
 }
-.showcase-info h2 { font-size: 1.9rem; margin: 0; }
-.showcase-info p  { font-size: 1rem; line-height: 1.6; color: rgba(255,255,255,0.8); margin: 0; }
-.features { display: flex; flex-wrap: wrap; gap: 7px; }
-.feat {
-  background: rgba(255,193,7,0.18);
-  border: 1px solid rgba(255,193,7,0.4);
-  padding: 3px 12px; border-radius: 20px;
-  font-size: 0.9rem; color: #FFC107; font-weight: 600;
+.showcase-info h2 {
+  margin: 0 0 0.375rem;
+  font-size: 1.4rem;
 }
+.showcase-info p {
+  margin: 0;
+  max-width: 19.5rem; /* breaks after "lawanmu." */
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 0.95rem; line-height: 1.6;
+  color: rgba(255,255,255,0.72);
+}
+
+/* 3 facts in a row, split by thin dividers */
+.stats {
+  list-style: none;
+  display: flex;
+  margin: 1.25rem 0 1.5rem; padding: 0;
+}
+.stats li {
+  display: flex; flex-direction: column;
+  padding: 0 1.25rem;
+  border-left: 0.0625rem solid rgba(255,255,255,0.14);
+}
+.stats li:first-child { padding-left: 0; border-left: none; }
+.stats strong {
+  font-size: 1.45rem; line-height: 1.15;
+  color: #FFC107;
+}
+.stats span {
+  font-family: 'Plus Jakarta Sans', 'Fredoka', sans-serif;
+  font-size: 0.72rem; font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .btn-main-start {
   align-self: flex-start;
-  background: linear-gradient(135deg, #FFC107, #FF5722);
-  border: none; color: white; padding: 12px 30px;
-  border-radius: 999px; cursor: pointer;
-  font-family: 'Fredoka', sans-serif; font-size: 1.3rem; font-weight: bold;
-  box-shadow: 0 6px 0 #c44d00, 0 10px 20px rgba(255,87,34,0.35);
-  transition: all 0.15s; display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 0.625rem;
+  padding: 0.8rem 1.75rem;
+  border: none; border-radius: 99px; cursor: pointer;
+  background: linear-gradient(135deg, #FFC107, #FF6D00);
+  color: #1f1300;
+  font-family: 'Fredoka', sans-serif; font-size: 1.2rem; font-weight: 700;
+  box-shadow: 0 0.5rem 1.25rem rgba(255,109,0,0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-.btn-main-start:hover  { transform: translateY(-4px); box-shadow: 0 10px 0 #c44d00, 0 14px 28px rgba(255,87,34,0.4); }
-.btn-main-start:active { transform: translateY(6px);  box-shadow: none; }
+.btn-main-start:hover  { transform: translateY(-0.125rem); box-shadow: 0 0.75rem 1.5rem rgba(255,109,0,0.35); }
+.btn-main-start:active { transform: translateY(0.0625rem); box-shadow: 0 0.25rem 0.75rem rgba(255,109,0,0.25); }
 .arrow { display: inline-block; transition: transform 0.2s; }
-.btn-main-start:hover .arrow { transform: translateX(5px); }
-
-.footer-tag { color: rgba(255,255,255,0.28); font-size: 0.9rem; }
+.btn-main-start:hover .arrow { transform: translateX(0.25rem); }
 </style>
